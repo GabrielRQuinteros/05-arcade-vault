@@ -1,6 +1,6 @@
 # SPEC 01 — Pantallas visuales del portal
 
-> **Status:** Draft
+> **Status:** Approved
 > **Depends on:** —
 > **Date:** 2026-11-12
 > **Objective:** Implementar en Next.js las cinco pantallas de `references/templates/` (biblioteca, detalle, reproductor, acceso y salón de la fama) como UI estática con datos de ejemplo, sin lógica de juegos.
@@ -74,17 +74,17 @@ Rutas:
 
 ## Acceptance criteria
 
-- [ ] `npm run build` termina sin errores y genera `/`, `/auth`, `/salon` y las 8 rutas de detalle y jugar.
-- [ ] `npx tsc --noEmit` y `npx eslint app components lib` no reportan errores.
-- [ ] Buscar "caída" en la biblioteca muestra solo la tarjeta CAÍDA; una búsqueda sin coincidencias muestra "NO HAY RESULTADOS".
-- [ ] Elegir la categoría SHOOTER muestra exactamente INVASORES y ROCAS.
-- [ ] Clic en una tarjeta o en su botón JUGAR navega a `/juegos/<id>`.
-- [ ] `/juegos/inexistente` devuelve 404.
-- [ ] En el reproductor, PAUSA detiene el puntaje y muestra "EN PAUSA"; REANUDAR lo retoma.
-- [ ] FIN abre el modal con la puntuación final; GUARDAR PUNTUACIÓN escribe en `av_scores` y muestra "PUNTUACIÓN GUARDADA".
-- [ ] Entrar en `/auth` con usuario "kai" muestra "KAI" en la barra y vuelve a `/`; el nombre sigue tras recargar.
-- [ ] Con sesión iniciada, el salón muestra la fila "TU MEJOR MARCA"; sin sesión no aparece.
-- [ ] En ancho móvil aparece el botón ≡ y abre el panel de menú.
+- [X] `npm run build` termina sin errores y genera `/`, `/auth`, `/salon` y las 8 rutas de detalle y jugar.
+- [X] `npx tsc --noEmit` y `npx eslint app components lib` no reportan errores.
+- [X] Buscar "caída" en la biblioteca muestra solo la tarjeta CAÍDA; una búsqueda sin coincidencias muestra "NO HAY RESULTADOS".
+- [X] Elegir la categoría SHOOTER muestra exactamente INVASORES y ROCAS.
+- [X] Clic en una tarjeta o en su botón JUGAR navega a `/juegos/<id>`.
+- [X] `/juegos/inexistente` devuelve 404.
+- [X] En el reproductor, PAUSA detiene el puntaje y muestra "EN PAUSA"; REANUDAR lo retoma.
+- [X] FIN abre el modal con la puntuación final; GUARDAR PUNTUACIÓN escribe en `av_scores` y muestra "PUNTUACIÓN GUARDADA".
+- [X] Entrar en `/auth` con usuario "kai" muestra "KAI" en la barra y vuelve a `/`; el nombre sigue tras recargar.
+- [X] Con sesión iniciada, el salón muestra la fila "TU MEJOR MARCA"; sin sesión no aparece.
+- [X] En ancho móvil aparece el botón ≡ y abre el panel de menú.
 
 ## Decisions
 
