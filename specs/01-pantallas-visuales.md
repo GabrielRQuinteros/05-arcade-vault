@@ -1,6 +1,6 @@
 # SPEC 01 — Pantallas visuales del portal
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** —
 > **Date:** 2026-11-12
 > **Objective:** Implementar en Next.js las cinco pantallas de `references/templates/` (biblioteca, detalle, reproductor, acceso y salón de la fama) como UI estática con datos de ejemplo, sin lógica de juegos.
