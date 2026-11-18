@@ -29,9 +29,12 @@
  *
  *  Estado actual
  *  -------------
- *  Hoy la base de datos está VACÍA (todavía no creamos ninguna tabla), por
- *  eso casi todas las secciones de abajo dicen "no hay nada". Igual el
- *  archivo ya sirve: deja todo preparado para cuando agreguemos tablas.
+ *  Hoy solo existen las 5 tablas de Better Auth (SPEC 06): `user`, `session`,
+ *  `account`, `verification` y `jwks`. Tienen RLS activo y SIN policies:
+ *  con la publishable key la Data API no puede leerlas ni escribirlas.
+ *  Better Auth las usa directo por `DATABASE_URL` (lib/auth/auth.ts), no por
+ *  el cliente de Supabase. Estos tipos quedan por si una spec futura las une
+ *  (por ejemplo, una FK de `scores` a `user`).
  */
 
 /**
@@ -92,16 +95,16 @@ export type Database = {
    * Un esquema es como una carpeta que agrupa tablas y otros objetos.
    * Supabase guarda nuestras tablas en la carpeta llamada `public`.
    *
-   * Adentro hay cinco secciones. Hoy TODAS están vacías. La escritura
+   * Adentro hay cinco secciones. Hoy solo `Tables` tiene contenido. La escritura
    * `[_ in never]: never` es la forma que tiene TypeScript de decir
    * "esta lista no tiene ningún elemento".
    */
   public: {
     /*
      * `Tables` — Las tablas, donde se guardan los datos.
-     * Ejemplo futuro: una tabla `scores` con las puntuaciones de cada jugador.
+     * Hoy: las 5 tablas de Better Auth. Ejemplo futuro: `scores`.
      *
-     * Cuando exista una tabla, acá van a aparecer tres versiones de ella:
+     * Cada tabla aparece en tres versiones:
      *   - `Row`    → cómo es una fila cuando la LEEMOS (todas las columnas).
      *   - `Insert` → qué datos hay que mandar para CREAR una fila nueva
      *                (las columnas que se completan solas, como el id o la
@@ -110,7 +113,196 @@ export type Database = {
      *                (todo es opcional: mandamos solo lo que cambia).
      */
     Tables: {
-      [_ in never]: never;
+      account: {
+        Row: {
+          accessToken: string | null;
+          accessTokenExpiresAt: string | null;
+          accountId: string;
+          createdAt: string;
+          id: string;
+          idToken: string | null;
+          password: string | null;
+          providerId: string;
+          refreshToken: string | null;
+          refreshTokenExpiresAt: string | null;
+          scope: string | null;
+          updatedAt: string;
+          userId: string;
+        };
+        Insert: {
+          accessToken?: string | null;
+          accessTokenExpiresAt?: string | null;
+          accountId: string;
+          createdAt?: string;
+          id: string;
+          idToken?: string | null;
+          password?: string | null;
+          providerId: string;
+          refreshToken?: string | null;
+          refreshTokenExpiresAt?: string | null;
+          scope?: string | null;
+          updatedAt: string;
+          userId: string;
+        };
+        Update: {
+          accessToken?: string | null;
+          accessTokenExpiresAt?: string | null;
+          accountId?: string;
+          createdAt?: string;
+          id?: string;
+          idToken?: string | null;
+          password?: string | null;
+          providerId?: string;
+          refreshToken?: string | null;
+          refreshTokenExpiresAt?: string | null;
+          scope?: string | null;
+          updatedAt?: string;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "account_userId_fkey";
+            columns: ["userId"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      jwks: {
+        Row: {
+          alg: string | null;
+          createdAt: string;
+          crv: string | null;
+          expiresAt: string | null;
+          id: string;
+          privateKey: string;
+          publicKey: string;
+        };
+        Insert: {
+          alg?: string | null;
+          createdAt: string;
+          crv?: string | null;
+          expiresAt?: string | null;
+          id: string;
+          privateKey: string;
+          publicKey: string;
+        };
+        Update: {
+          alg?: string | null;
+          createdAt?: string;
+          crv?: string | null;
+          expiresAt?: string | null;
+          id?: string;
+          privateKey?: string;
+          publicKey?: string;
+        };
+        Relationships: [];
+      };
+      session: {
+        Row: {
+          createdAt: string;
+          expiresAt: string;
+          id: string;
+          ipAddress: string | null;
+          token: string;
+          updatedAt: string;
+          userAgent: string | null;
+          userId: string;
+        };
+        Insert: {
+          createdAt?: string;
+          expiresAt: string;
+          id: string;
+          ipAddress?: string | null;
+          token: string;
+          updatedAt: string;
+          userAgent?: string | null;
+          userId: string;
+        };
+        Update: {
+          createdAt?: string;
+          expiresAt?: string;
+          id?: string;
+          ipAddress?: string | null;
+          token?: string;
+          updatedAt?: string;
+          userAgent?: string | null;
+          userId?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "session_userId_fkey";
+            columns: ["userId"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      user: {
+        Row: {
+          createdAt: string;
+          displayUsername: string | null;
+          email: string;
+          emailVerified: boolean;
+          id: string;
+          image: string | null;
+          name: string;
+          updatedAt: string;
+          username: string | null;
+        };
+        Insert: {
+          createdAt?: string;
+          displayUsername?: string | null;
+          email: string;
+          emailVerified: boolean;
+          id: string;
+          image?: string | null;
+          name: string;
+          updatedAt?: string;
+          username?: string | null;
+        };
+        Update: {
+          createdAt?: string;
+          displayUsername?: string | null;
+          email?: string;
+          emailVerified?: boolean;
+          id?: string;
+          image?: string | null;
+          name?: string;
+          updatedAt?: string;
+          username?: string | null;
+        };
+        Relationships: [];
+      };
+      verification: {
+        Row: {
+          createdAt: string;
+          expiresAt: string;
+          id: string;
+          identifier: string;
+          updatedAt: string;
+          value: string;
+        };
+        Insert: {
+          createdAt?: string;
+          expiresAt: string;
+          id: string;
+          identifier: string;
+          updatedAt?: string;
+          value: string;
+        };
+        Update: {
+          createdAt?: string;
+          expiresAt?: string;
+          id?: string;
+          identifier?: string;
+          updatedAt?: string;
+          value?: string;
+        };
+        Relationships: [];
+      };
     };
 
     /*

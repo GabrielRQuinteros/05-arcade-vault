@@ -1,9 +1,19 @@
 "use client";
 
-import { createContext, useCallback, useContext, useSyncExternalStore } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
+import { authClient } from "@/lib/auth/auth-client";
 
-export type User = { name: string } | null;
+/** `name` = username en MAYÚSCULAS. */
+export type User = { name: string; email: string } | null;
 
+// Cache de display (evita parpadeo del nav). Nunca guarda tokens ni ids.
 const KEY = "av_user";
 const listeners = new Set<() => void>();
 
@@ -23,31 +33,69 @@ const getSnapshot = () => {
   }
 };
 
+function parseCache(raw: string | null): User {
+  if (!raw) return null;
+  try {
+    const v = JSON.parse(raw);
+    return typeof v?.name === "string" && typeof v?.email === "string"
+      ? { name: v.name, email: v.email }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(u: User) {
+  try {
+    const next = u ? JSON.stringify({ name: u.name, email: u.email }) : null;
+    if (next === localStorage.getItem(KEY)) return;
+    if (next) localStorage.setItem(KEY, next);
+    else localStorage.removeItem(KEY);
+  } catch {}
+  listeners.forEach((l) => l());
+}
+
 const Ctx = createContext<{
   user: User;
-  signIn: (u: User) => void;
-  signOut: () => void;
-}>({ user: null, signIn: () => {}, signOut: () => {} });
+  isPending: boolean;
+  signOut: () => Promise<void>;
+}>({ user: null, isPending: true, signOut: async () => {} });
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, () => null);
-  let user: User = null;
-  try {
-    user = raw ? JSON.parse(raw) : null;
-  } catch {}
+  const router = useRouter();
+  const { data, isPending } = authClient.useSession();
+  const cached = parseCache(
+    useSyncExternalStore(subscribe, getSnapshot, () => null),
+  );
 
-  const write = useCallback((u: User) => {
+  const live: User = data
+    ? {
+        name: (data.user.username ?? data.user.name).toUpperCase(),
+        email: data.user.email,
+      }
+    : null;
+  const user = isPending ? cached : live;
+
+  const liveName = live?.name;
+  const liveEmail = live?.email;
+  useEffect(() => {
+    if (isPending) return;
+    writeCache(
+      liveName && liveEmail ? { name: liveName, email: liveEmail } : null,
+    );
+  }, [isPending, liveName, liveEmail]);
+
+  const signOut = useCallback(async () => {
     try {
-      if (u) localStorage.setItem(KEY, JSON.stringify(u));
-      else localStorage.removeItem(KEY);
-    } catch {}
-    listeners.forEach((l) => l());
-  }, []);
+      await authClient.signOut();
+    } finally {
+      writeCache(null);
+      router.refresh();
+    }
+  }, [router]);
 
   return (
-    <Ctx.Provider value={{ user, signIn: write, signOut: () => write(null) }}>
-      {children}
-    </Ctx.Provider>
+    <Ctx.Provider value={{ user, isPending, signOut }}>{children}</Ctx.Provider>
   );
 }
 
