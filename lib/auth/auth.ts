@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { jwt, username } from "better-auth/plugins";
-import { Pool } from "pg";
+import { pool } from "@/lib/db";
 import { getAuthEnv } from "./env";
 import {
   USERNAME_MAX,
@@ -13,8 +13,7 @@ import {
 // Solo servidor. Nunca importar desde componentes cliente.
 const env = getAuthEnv();
 
-// DATABASE_URL apunta al transaction pooler de Supabase (puerto 6543).
-const pool = new Pool({ connectionString: env.DATABASE_URL });
+// Pool compartido (lib/db.ts): Better Auth y las puntuaciones usan las mismas conexiones.
 
 async function isUsernameTaken(name: string): Promise<boolean> {
   const { rowCount } = await pool.query(

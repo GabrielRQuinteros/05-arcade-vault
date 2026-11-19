@@ -29,12 +29,15 @@
  *
  *  Estado actual
  *  -------------
- *  Hoy solo existen las 5 tablas de Better Auth (SPEC 06): `user`, `session`,
- *  `account`, `verification` y `jwks`. Tienen RLS activo y SIN policies:
- *  con la publishable key la Data API no puede leerlas ni escribirlas.
- *  Better Auth las usa directo por `DATABASE_URL` (lib/auth/auth.ts), no por
- *  el cliente de Supabase. Estos tipos quedan por si una spec futura las une
- *  (por ejemplo, una FK de `scores` a `user`).
+ *  Existen 7 tablas:
+ *    - Las 5 de Better Auth (SPEC 06): `user`, `session`, `account`,
+ *      `verification` y `jwks`.
+ *    - Las 2 de puntuaciones (SPEC 07): `games` (los juegos del sistema) y
+ *      `best_scores` (la mejor marca de cada jugador por juego, con FK a
+ *      `user` y a `games`).
+ *  Todas tienen RLS activo y SIN policies: con la publishable key la Data API
+ *  no puede leerlas ni escribirlas. La app las usa directo por `DATABASE_URL`
+ *  (Pool de `pg` en lib/db.ts), no por el cliente de Supabase.
  */
 
 /**
@@ -102,7 +105,7 @@ export type Database = {
   public: {
     /*
      * `Tables` — Las tablas, donde se guardan los datos.
-     * Hoy: las 5 tablas de Better Auth. Ejemplo futuro: `scores`.
+     * Hoy: las 5 tablas de Better Auth y las 2 de puntuaciones (`games`, `best_scores`).
      *
      * Cada tabla aparece en tres versiones:
      *   - `Row`    → cómo es una fila cuando la LEEMOS (todas las columnas).
@@ -168,6 +171,77 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      /*
+       * `best_scores` (SPEC 07) — La mejor marca de cada jugador en cada juego.
+       * Una sola fila por (user_id, game_id); solo se reemplaza si la nueva es mayor.
+       */
+      best_scores: {
+        Row: {
+          achieved_at: string;
+          game_id: string;
+          score: number;
+          user_id: string;
+        };
+        Insert: {
+          achieved_at?: string;
+          game_id: string;
+          score: number;
+          user_id: string;
+        };
+        Update: {
+          achieved_at?: string;
+          game_id?: string;
+          score?: number;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "best_scores_game_id_fkey";
+            columns: ["game_id"];
+            isOneToOne: false;
+            referencedRelation: "games";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "best_scores_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "user";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /*
+       * `games` (SPEC 07) — Los juegos del sistema (mismo `id` que lib/games.ts).
+       * `playable` dice si acepta puntuaciones; `plays_count` cuenta partidas.
+       */
+      games: {
+        Row: {
+          category: string;
+          created_at: string;
+          id: string;
+          playable: boolean;
+          plays_count: number;
+          title: string;
+        };
+        Insert: {
+          category: string;
+          created_at?: string;
+          id: string;
+          playable?: boolean;
+          plays_count?: number;
+          title: string;
+        };
+        Update: {
+          category?: string;
+          created_at?: string;
+          id?: string;
+          playable?: boolean;
+          plays_count?: number;
+          title?: string;
+        };
+        Relationships: [];
       };
       jwks: {
         Row: {

@@ -5,6 +5,8 @@ import { useEffect, useRef, useState } from "react";
 import { fmt, type Game } from "@/lib/games";
 import { GAME_COMPONENTS } from "@/games/registry";
 import type { GameHandle, GameSnapshot } from "@/games/types";
+import type { ServerResponse } from "@/lib/server-response";
+import type { SubmitResult } from "@/lib/scores-schema";
 import { useSession } from "./session";
 
 const INITIAL_SNAPSHOT: GameSnapshot = {
@@ -13,6 +15,15 @@ const INITIAL_SNAPSHOT: GameSnapshot = {
   level: 1,
   state: "playing",
 };
+
+/** Estado del guardado automático al terminar una partida de un juego registrado. */
+type SaveStatus =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | { kind: "record"; rank: number }
+  | { kind: "registered"; best: number }
+  | { kind: "error" }
+  | { kind: "guest" };
 
 export function GamePlayer({ game }: { game: Game }) {
   const { user } = useSession();
@@ -28,6 +39,11 @@ export function GamePlayer({ game }: { game: Game }) {
   // Juego registrado: el motor es la única fuente de verdad de la partida.
   const [snapshot, setSnapshot] = useState<GameSnapshot>(INITIAL_SNAPSHOT);
   const gameRef = useRef<GameHandle>(null);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: "idle" });
+  // Un único envío por partida (StrictMode / re-renders); se rearma al reiniciar.
+  const sentRef = useRef(false);
+  // Identifica la partida en curso: descarta respuestas de partidas anteriores.
+  const runRef = useRef(0);
 
   const name = typedName ?? user?.name ?? "INVITADO";
   const hudScore = simulated ? score : snapshot.score;
@@ -36,6 +52,51 @@ export function GamePlayer({ game }: { game: Game }) {
   const gameOver = !simulated && snapshot.state === "gameover";
 
   const togglePause = () => setPaused((p) => !p);
+
+  const submitScore = async (finalScore: number) => {
+    const run = runRef.current;
+    if (!user) {
+      setSaveStatus({ kind: "guest" });
+      return;
+    }
+    setSaveStatus({ kind: "saving" });
+    try {
+      const res = await fetch("/api/scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gameId: game.id, score: finalScore }),
+      });
+      const body = (await res.json()) as ServerResponse<SubmitResult>;
+      if (run !== runRef.current) return;
+      if (!body.ok || !body.data) {
+        setSaveStatus({ kind: "error" });
+        return;
+      }
+      setSaveStatus(
+        body.data.isRecord
+          ? { kind: "record", rank: body.data.rank }
+          : { kind: "registered", best: body.data.best },
+      );
+    } catch {
+      if (run === runRef.current) setSaveStatus({ kind: "error" });
+    }
+  };
+
+  // El motor emite un snapshot por cada cambio; la transición a "gameover"
+  // (perder la última vida o FIN) dispara el envío una sola vez.
+  const onSnapshot = (s: GameSnapshot) => {
+    setSnapshot(s);
+    if (s.state === "gameover") {
+      if (sentRef.current) return;
+      sentRef.current = true;
+      void submitScore(s.score);
+    } else if (sentRef.current) {
+      // Nueva partida (Espacio o JUGAR DE NUEVO): oculta la línea y rearma el envío.
+      sentRef.current = false;
+      runRef.current += 1;
+      setSaveStatus({ kind: "idle" });
+    }
+  };
 
   const onFin = () => {
     if (simulated) {
@@ -113,13 +174,17 @@ export function GamePlayer({ game }: { game: Game }) {
         </div>
       </div>
 
+      {gameOver && saveStatus.kind !== "idle" && (
+        <SaveStatusLine status={saveStatus} />
+      )}
+
       <div className="crt">
         <div className="crt-screen">
           {GameComponent ? (
             <GameComponent
               ref={gameRef}
               paused={paused}
-              onSnapshot={setSnapshot}
+              onSnapshot={onSnapshot}
               onTogglePause={togglePause}
             />
           ) : (
@@ -203,4 +268,41 @@ export function GamePlayer({ game }: { game: Game }) {
       )}
     </div>
   );
+}
+
+function SaveStatusLine({ status }: { status: SaveStatus }) {
+  switch (status.kind) {
+    case "saving":
+      return (
+        <div className="save-status" role="status">
+          ▸ GUARDANDO PUNTUACIÓN...
+        </div>
+      );
+    case "record":
+      return (
+        <div className="save-status record" role="status">
+          ▸ ¡NUEVO RÉCORD! · RANGO #{String(status.rank).padStart(2, "0")}
+        </div>
+      );
+    case "registered":
+      return (
+        <div className="save-status registered" role="status">
+          ▸ PUNTUACIÓN REGISTRADA · TU RÉCORD: {fmt(status.best)}
+        </div>
+      );
+    case "error":
+      return (
+        <div className="save-status error" role="status">
+          ▸ NO SE PUDO GUARDAR LA PUNTUACIÓN
+        </div>
+      );
+    case "guest":
+      return (
+        <div className="save-status error" role="status">
+          <Link href="/auth">▸ INICIA SESIÓN PARA GUARDAR TU PUNTUACIÓN</Link>
+        </div>
+      );
+    default:
+      return null;
+  }
 }

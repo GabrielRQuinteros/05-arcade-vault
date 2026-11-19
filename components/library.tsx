@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { CATS, GAMES, fmt, type Game } from "@/lib/games";
 
-function GameCard({ game }: { game: Game }) {
+function GameCard({ game, best }: { game: Game; best: string }) {
   const router = useRouter();
   const tiltRef = useRef<HTMLDivElement>(null);
   const href = `/juegos/${game.id}`;
@@ -39,7 +39,7 @@ function GameCard({ game }: { game: Game }) {
         <div className="row">
           <div className="score-badge">
             <span>MEJOR PUNTUACIÓN</span>
-            <b>{fmt(game.best)}</b>
+            <b>{best}</b>
           </div>
           <button
             className={"btn " + (game.color === "magenta" ? "magenta" : game.color === "yellow" ? "yellow" : "")}
@@ -56,7 +56,14 @@ function GameCard({ game }: { game: Game }) {
   );
 }
 
-export function Library() {
+function bestLabel(bests: Record<string, number | null> | undefined, id: string) {
+  if (!bests) return "···";
+  const best = bests[id];
+  return best === null || best === undefined ? "—" : fmt(best);
+}
+
+/** `bests` = mejor global por id de juego (BD). Sin prop → cargando ("···"). */
+export function Library({ bests }: { bests?: Record<string, number | null> }) {
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("TODOS");
 
@@ -98,7 +105,7 @@ export function Library() {
 
       <div className="av-grid">
         {filtered.map((g) => (
-          <GameCard key={g.id} game={g} />
+          <GameCard key={g.id} game={g} best={bestLabel(bests, g.id)} />
         ))}
         {filtered.length === 0 && (
           <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 80, color: "var(--ink-faint)" }}>
