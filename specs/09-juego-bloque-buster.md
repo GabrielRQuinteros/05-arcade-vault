@@ -1,6 +1,6 @@
 # SPEC 09 — Juego Bloque Buster jugable en el reproductor
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 05, SPEC 07
 > **Date:** 2026-11-20
 > **Objective:** Portar a TypeScript el rompebloques de `references/started-games/04-arkanoid/` como el juego `bloque-buster` en `/juegos/bloque-buster/jugar`, con el patrón de SPEC 05, y guardar puntuaciones reales como Asteroids y Tetris.
