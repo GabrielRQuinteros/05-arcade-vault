@@ -11,7 +11,7 @@ export type GameSnapshot = {
 export type GameHandle = {
   /** Fuerza game over. */
   endGame(): void;
-  /** Nueva partida: score 0, lives 3, level 1. */
+  /** Nueva partida con los valores iniciales del juego. */
   restart(): void;
 };
 
