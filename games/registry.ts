@@ -1,6 +1,7 @@
 import type { ComponentType } from "react";
 import { AsteroidsCanvas } from "./asteroids/asteroids-canvas";
 import { BloqueBusterCanvas } from "./bloque-buster/bloque-buster-canvas";
+import { SnakeCanvas } from "./snake/snake-canvas";
 import { TetrisCanvas } from "./tetris/tetris-canvas";
 import type { GameCanvasProps } from "./types";
 
@@ -11,5 +12,6 @@ export const GAME_COMPONENTS: Record<
 > = {
   asteroids: AsteroidsCanvas,
   "bloque-buster": BloqueBusterCanvas,
+  snake: SnakeCanvas,
   tetris: TetrisCanvas,
 };
