@@ -31,7 +31,7 @@ Specs implementadas (01–10): pantallas visuales, home, about + contacto (Resen
 - `components/`: UI cliente/servidor (`nav`, `home`, `library`, `player`, `auth-form`, `user-menu`, `session` = `SessionProvider`/`useSession`, `reveal`, …).
 - `lib/`: `games.ts` (catálogo UI `GAMES`, `getGame`, `fmt`), `db.ts` (Pool `pg` único, server-only), `scores.ts` (queries server-only), `scores-schema.ts` (Zod compartido cliente/servidor), `contact.ts`, `server-response.ts`, `auth/*`, `supabase/*`.
 - `games/`: juegos reales en canvas (ver abajo).
-- `references/`: `templates/` (diseño JSX/CSS original de la UI), `started-games/` (juegos de referencia a portar: `02-asteroids`, `03-tetris`, `04-arkanoid`), `snake/snake-assets/`. Solo lectura.
+- `references/`: `templates/` (diseño JSX/CSS original de la UI), `started-games/` (juegos de referencia a portar: `02-asteroids`, `03-tetris`, `04-arkanoid`), `snake/snake-assets/`. Solo lectura, salvo `games-seggestions-todo.md` (historial de sugerencias, lo mantiene el agente `game-planner`).
 - `public/games/<id>/`: assets de juegos (hoy solo `snake/fruits.png`).
 
 ## Convenciones de API (route handlers)
@@ -62,7 +62,7 @@ Validar body con Zod (`safeParse`), responder `NextResponse.json(createServerRes
 - `paused` vive en React (prop); P/Esc → `onTogglePause`. `GameHandle` (`endGame`, `restart`) vía ref. FIN fuerza game over; Espacio reinicia. Teclado (flechas + WASD), sin táctil.
 - Al entrar en `gameover` el reproductor hace POST `/api/scores` una vez por partida; invitado ve CTA a `/auth`.
 - Assets: excepción iniciada en Snake (`public/games/snake/`, atlas tipado en `sprites.ts`, precarga + fallback a primitivas).
-- Nuevo juego: `/add-game` → genera descripción → `/spec` → `/spec-impl`.
+- Nuevo juego: `@game-planner` (elige qué juego) → `/add-game` → genera descripción → `/spec` → `/spec-impl`.
 
 ## UI / theming
 
@@ -78,10 +78,12 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 - Hook `PostToolUse` (Write|Edit) en `.claude/hooks/format-lint.mjs`: Prettier en `.ts/.tsx/.md`, `eslint --fix` en TS. Si falla bloquea (exit 2): corregir el error reportado.
 - `specs/.spec-config.yml`: `AutoCreateBranch: true`, `AutoCommitSteps: false` (no commitear pasos automáticamente).
 - Skills del proyecto (`skills-lock.json`, `.agents/skills/`, `.claude/skills/`): `spec`, `spec-impl` (Klerith/fernando-skills), `frontend-design`, `ui-ux-pro-max`, `supabase`, `supabase-postgres-best-practices`, `playwright-cli`, `add-game` (propia).
+- Agente `.claude/agents/game-planner.md`: decide qué juego agregar (diversidad de categorías, factibilidad canvas 2D, reconoce clásicos). Memoria persistente `memory: project` → `.claude/agent-memory/game-planner/` (commitear); historial en `references/games-seggestions-todo.md`.
 - Capturas/logs de Playwright en `.playwright-mcp/` y `.playwright-cli/` (gitignored).
 
 ## SKILLS
 
 - Usa siempre la skill /frontend-design cuando tengas que diseñar/implementar interfaces de usuario.
 - Usa /supabase y /supabase-postgres-best-practices antes de cambios de esquema, migraciones o queries.
+- Usa el agente `game-planner` cuando se pidan ideas o qué juego agregar a continuación (antes de /add-game).
 - Usa /add-game para preparar un juego nuevo antes de /spec.
