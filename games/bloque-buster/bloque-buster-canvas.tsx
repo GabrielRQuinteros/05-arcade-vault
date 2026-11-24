@@ -69,6 +69,8 @@ export function BloqueBusterCanvas({
         display: "block",
         width: "100%",
         height: "100%",
+        // Arrastrar el paddle con el dedo no desplaza la página.
+        touchAction: "none",
       }}
     />
   );

@@ -4,10 +4,13 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { fmt, type Game } from "@/lib/games";
 import { GAME_COMPONENTS } from "@/games/registry";
+import { TOUCH_BINDINGS } from "@/games/touch-bindings";
 import type { GameHandle, GameSnapshot } from "@/games/types";
+import { useTouchMode } from "@/lib/touch";
 import type { ServerResponse } from "@/lib/server-response";
 import type { SubmitResult } from "@/lib/scores-schema";
 import { useSession } from "./session";
+import { TouchControls } from "./touch-controls";
 
 const INITIAL_SNAPSHOT: GameSnapshot = {
   score: 0,
@@ -27,6 +30,7 @@ type SaveStatus =
 
 export function GamePlayer({ game }: { game: Game }) {
   const { user } = useSession();
+  const touch = useTouchMode();
   // Juego real registrado; si no existe, se mantiene el reproductor simulado.
   const GameComponent = GAME_COMPONENTS[game.id];
   const simulated = GameComponent === undefined;
@@ -226,6 +230,10 @@ export function GamePlayer({ game }: { game: Game }) {
           <span>CARGA · 1MB</span>
         </div>
       </div>
+
+      {touch && !simulated && (
+        <TouchControls bindings={TOUCH_BINDINGS[game.id] ?? { b: null }} />
+      )}
 
       {over && (
         <div
