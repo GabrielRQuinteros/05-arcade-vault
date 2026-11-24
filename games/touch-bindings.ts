@@ -16,4 +16,5 @@ export const TOUCH_BINDINGS: Record<string, TouchBindings> = {
   tetris: { b: "KeyX" }, // rotar
   "bloque-buster": { b: null },
   snake: { b: null },
+  frogger: { b: null }, // D-pad salta; A reinicia
 };

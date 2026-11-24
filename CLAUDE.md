@@ -62,7 +62,7 @@ Validar body con Zod (`safeParse`), responder `NextResponse.json(createServerRes
 - `paused` vive en React (prop); P/Esc → `onTogglePause`. `GameHandle` (`endGame`, `restart`) vía ref. FIN fuerza game over; Espacio reinicia. Teclado (flechas + WASD); táctil (SPEC 11) vía `<TouchControls>` que despacha teclas sintéticas en `window` — cada juego nuevo necesita entrada en `games/touch-bindings.ts`.
 - Al entrar en `gameover` el reproductor hace POST `/api/scores` una vez por partida; invitado ve CTA a `/auth`.
 - Assets: excepción iniciada en Snake (`public/games/snake/`, atlas tipado en `sprites.ts`, precarga + fallback a primitivas).
-- Nuevo juego: `@game-planner` (elige qué juego) → `/add-game` → genera descripción → `/spec` → `/spec-impl` → `@mobile-porter` (verifica móvil).
+- Nuevo juego: `@game-planner` (elige qué juego) → `/add-game` → genera descripción → `/spec` → `/spec-impl-game` (= `/spec-impl` + lanza `@mobile-porter` al terminar).
 
 ## UI / theming
 
@@ -77,7 +77,7 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 
 - Hook `PostToolUse` (Write|Edit) en `.claude/hooks/format-lint.mjs`: Prettier en `.ts/.tsx/.md`, `eslint --fix` en TS. Si falla bloquea (exit 2): corregir el error reportado.
 - `specs/.spec-config.yml`: `AutoCreateBranch: true`, `AutoCommitSteps: false` (no commitear pasos automáticamente).
-- Skills del proyecto (`skills-lock.json`, `.agents/skills/`, `.claude/skills/`): `spec`, `spec-impl` (Klerith/fernando-skills), `frontend-design`, `ui-ux-pro-max`, `supabase`, `supabase-postgres-best-practices`, `playwright-cli`, `add-game` (propia).
+- Skills del proyecto (`skills-lock.json`, `.agents/skills/`, `.claude/skills/`): `spec`, `spec-impl` (Klerith/fernando-skills), `frontend-design`, `ui-ux-pro-max`, `supabase`, `supabase-postgres-best-practices`, `playwright-cli`, `add-game` (propia), `spec-impl-game` (propia: lee y sigue `.agents/skills/spec-impl/SKILL.md` fases 1–4, luego lanza `mobile-porter` y relaya su reporte).
 - Agente `.claude/agents/game-planner.md`: decide qué juego agregar (diversidad de categorías, factibilidad canvas 2D, reconoce clásicos). Memoria persistente `memory: project` → `.claude/agent-memory/game-planner/` (commitear); historial en `references/games-seggestions-todo.md`.
 - Agente `.claude/agents/game-jam.md`: tema + juego → 2 specs completos (formato SPEC 05/08/09/10 o ejemplos dados) en `specs/game-jam/<game-id>/`. Se detiene y pregunta ante dudas de alto impacto; Supabase solo lectura. Memoria en `.claude/agent-memory/game-jam/`.
 - Agente `.claude/agents/mobile-porter.md`: audita y corrige el reproductor `/juegos/<id>/jugar` en navegador móvil (390×844, Playwright `hasTouch`) según SPEC 11: `TOUCH_BINDINGS`, controles táctiles, HUD compacto. No toca motores ni contrato común; pregunta si el fix lo requiere. No commitea. Memoria en `.claude/agent-memory/mobile-porter/`.
@@ -88,5 +88,5 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 - Usa siempre la skill /frontend-design cuando tengas que diseñar/implementar interfaces de usuario.
 - Usa /supabase y /supabase-postgres-best-practices antes de cambios de esquema, migraciones o queries.
 - Usa el agente `game-planner` cuando se pidan ideas o qué juego agregar a continuación (antes de /add-game).
-- Usa el agente `mobile-porter` tras implementar un juego nuevo (después de /spec-impl) o cuando se pida revisar/portar juegos a móvil.
+- Para implementar la spec de un juego usa /spec-impl-game (lanza `mobile-porter` al final). Usa el agente `mobile-porter` directamente cuando se pida revisar/portar juegos a móvil.
 - Usa /add-game para preparar un juego nuevo antes de /spec.

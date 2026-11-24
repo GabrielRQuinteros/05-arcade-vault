@@ -1,0 +1,1 @@
+- [Estado de auditorías](project_audit_status.md) — juegos auditados + fecha, error dev pre-existente en jugar, tips Playwright táctil
