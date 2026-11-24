@@ -2,6 +2,9 @@ import { W } from "./constants";
 
 export type Action = "left" | "right" | "launch" | "pause";
 
+/** Desplazamiento máximo (px de pantalla) para que un toque/clic cuente como lanzamiento. */
+const TAP_SLOP_PX = 10;
+
 const KEY_MAP: Record<string, Action> = {
   ArrowLeft: "left",
   KeyA: "left",
@@ -50,7 +53,11 @@ export class Input {
     this.held.delete(e.code);
   };
 
-  private onMouseMove = (e: MouseEvent): void => {
+  // pointerId → posición de pantalla donde empezó el toque/clic.
+  private downAt = new Map<number, { x: number; y: number }>();
+
+  /** Mouse, toque o lápiz sobre el canvas: X lógica del paddle. */
+  private onPointerMove = (e: PointerEvent): void => {
     const canvas = this.canvas;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -58,8 +65,24 @@ export class Input {
     this.mouseX = ((e.clientX - rect.left) * W) / rect.width;
   };
 
-  private onClick = (): void => {
-    this.clicked = true;
+  private onPointerDown = (e: PointerEvent): void => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    this.downAt.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    // El toque también posiciona el paddle desde el primer contacto.
+    if (e.pointerType !== "mouse") this.onPointerMove(e);
+  };
+
+  /** Lanza solo si el puntero apenas se movió: arrastrar el paddle no lanza. */
+  private onPointerUp = (e: PointerEvent): void => {
+    const start = this.downAt.get(e.pointerId);
+    this.downAt.delete(e.pointerId);
+    if (!start) return;
+    const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+    if (moved < TAP_SLOP_PX) this.clicked = true;
+  };
+
+  private onPointerCancel = (e: PointerEvent): void => {
+    this.downAt.delete(e.pointerId);
   };
 
   attach(canvas: HTMLCanvasElement): void {
@@ -67,8 +90,10 @@ export class Input {
     this.canvas = canvas;
     window.addEventListener("keydown", this.onKeyDown);
     window.addEventListener("keyup", this.onKeyUp);
-    canvas.addEventListener("mousemove", this.onMouseMove);
-    canvas.addEventListener("click", this.onClick);
+    canvas.addEventListener("pointermove", this.onPointerMove);
+    canvas.addEventListener("pointerdown", this.onPointerDown);
+    canvas.addEventListener("pointerup", this.onPointerUp);
+    canvas.addEventListener("pointercancel", this.onPointerCancel);
   }
 
   detach(): void {
@@ -76,9 +101,12 @@ export class Input {
     if (!canvas) return;
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
-    canvas.removeEventListener("mousemove", this.onMouseMove);
-    canvas.removeEventListener("click", this.onClick);
+    canvas.removeEventListener("pointermove", this.onPointerMove);
+    canvas.removeEventListener("pointerdown", this.onPointerDown);
+    canvas.removeEventListener("pointerup", this.onPointerUp);
+    canvas.removeEventListener("pointercancel", this.onPointerCancel);
     this.canvas = null;
+    this.downAt.clear();
     this.held.clear();
     this.clear();
   }
