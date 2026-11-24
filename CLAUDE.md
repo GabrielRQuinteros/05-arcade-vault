@@ -79,6 +79,7 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 - `specs/.spec-config.yml`: `AutoCreateBranch: true`, `AutoCommitSteps: false` (no commitear pasos automáticamente).
 - Skills del proyecto (`skills-lock.json`, `.agents/skills/`, `.claude/skills/`): `spec`, `spec-impl` (Klerith/fernando-skills), `frontend-design`, `ui-ux-pro-max`, `supabase`, `supabase-postgres-best-practices`, `playwright-cli`, `add-game` (propia).
 - Agente `.claude/agents/game-planner.md`: decide qué juego agregar (diversidad de categorías, factibilidad canvas 2D, reconoce clásicos). Memoria persistente `memory: project` → `.claude/agent-memory/game-planner/` (commitear); historial en `references/games-seggestions-todo.md`.
+- Agente `.claude/agents/game-jam.md`: tema + juego → 2 specs completos (formato SPEC 05/08/09/10 o ejemplos dados) en `specs/game-jam/<game-id>/`. Se detiene y pregunta ante dudas de alto impacto; Supabase solo lectura. Memoria en `.claude/agent-memory/game-jam/`.
 - Capturas/logs de Playwright en `.playwright-mcp/` y `.playwright-cli/` (gitignored).
 
 ## SKILLS

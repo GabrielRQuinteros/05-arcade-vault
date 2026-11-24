@@ -1,0 +1,1 @@
+- [Rondas de sugerencias](project_rondas.md) — rondas 1-2 (2026-11-22): 23 pendientes, top estela-neon/arena-robot/burbujazo/gloton, decisión pendiente
