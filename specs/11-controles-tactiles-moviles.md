@@ -1,6 +1,6 @@
 # SPEC 11 — Controles táctiles para jugar en móvil
 
-> **Status:** Approved
+> **Status:** Implemented
 > **Depends on:** SPEC 05, SPEC 07, SPEC 08, SPEC 09, SPEC 10
 > **Date:** 2026-11-23
 > **Objective:** Agregar al reproductor una sección de controles táctiles común (D-pad + botones A/B) bajo el canvas, visible tras el primer toque, que maneje Asteroids, Tetris, Bloque Buster y Snake despachando eventos de teclado sintéticos, con un HUD compacto que deje todo visible en vertical.

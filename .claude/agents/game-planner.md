@@ -40,7 +40,7 @@ Evalúa explícitamente cada candidato contra las restricciones de la plataforma
 - Sin 3D real ni WebGL. Pseudo-3D (raycaster, escalado de sprites, carretera tipo Out Run) solo si se justifica y se marca como riesgo.
 - Física/colisiones simples: AABB, círculos, grid. Cámara simple aceptable si no cabe en una pantalla.
 - IA de enemigos acotada (patrones, persecución simple, máquinas de estado).
-- Solo teclado (flechas + WASD, P/Esc pausa), sin táctil, sin sonido por defecto.
+- Teclado (flechas + WASD, P/Esc pausa), sin sonido por defecto. Debe ser jugable también en móvil con los controles táctiles comunes (SPEC 11): D-pad (4 direcciones) + `A` (`Space`) + `B` opcional. Juegos que necesiten más de 2 botones de acción, texto o apuntar con precisión → penalizar factibilidad.
 - 1 jugador con **puntuación numérica competitiva** (leaderboard `best_scores`: mayor score gana). VERSUS = contra CPU.
 - HUD genérico fijo: score, lives, level, state. Valores propios del juego se dibujan en canvas.
 - Alcance MVP implementable en **una** spec.

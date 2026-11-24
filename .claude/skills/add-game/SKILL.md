@@ -156,6 +156,7 @@ Extrae (modo ref) o define (modo desc) toda la información necesaria para que `
 
 - Teclas → acciones (de la referencia o propuestas)
 - Qué teclas agregar (WASD, P/Esc para pausa) según el patrón del proyecto
+- Táctil (SPEC 11): mapeo a los controles comunes — D-pad = flechas, `A` = `Space`, `B` = `code` de la acción secundaria (≠ flechas y ≠ `Space`) o `null`. Va en `games/touch-bindings.ts`; el juego no implementa táctil propio
 
 **Scoring:**
 
@@ -167,7 +168,7 @@ Extrae (modo ref) o define (modo desc) toda la información necesaria para que `
 
 **Mecánicas fuera de scope (Out):**
 
-- Sonido (salvo que el usuario lo pida), red, localStorage, controles táctiles
+- Sonido (salvo que el usuario lo pida), red, localStorage, controles táctiles propios del juego (gestos/swipe; los comunes de SPEC 11 sí entran)
 - Assets externos si no se pasó `--assets`
 - Cualquier mecánica del original o de la descripción que no entra en este MVP
 
@@ -213,6 +214,7 @@ Alcance — generación del código del juego:
 
 Alcance — integración a Arcade Vault:
 - games/registry.ts — registrar el juego
+- games/touch-bindings.ts — entrada "<game-id>": { b: <code | null> } para los controles táctiles de SPEC 11
 - lib/games.ts — entrada { id, title, short, long, cat, cover, color } (o reutilizar placeholder)
 - Supabase public.games — fila con id = <game-id> y playable = true (INSERT o UPDATE)
 - Puntuaciones reales vía /api/scores con el GameSnapshot genérico
@@ -223,13 +225,14 @@ Diseño del juego:
 - Entidades: <nombre — estado — mecánica — sprite/color>
 - Estados y transiciones: <inicio, playing, dead, gameover, pausa, cambio de nivel>
 - Input: <tecla → acción, incl. WASD y P/Esc>
+- Táctil: <▲ ▼ ◀ ▶ / A (Space) / B (code o null) → acción>
 - Scoring: <eventos/fórmulas>
 - Vidas iniciales / progresión de niveles: <...>
 - Paleta: <elemento → color neón>
 
 Decisiones ya tomadas (invariantes, no preguntar): canvas único en .crt-screen; HUD React fijo (Jugador/Puntuación/Vidas/Nivel + PAUSA/FIN/SALIR); GameSnapshot { score, lives, level, state }; motor sin globales; colores hex copiados de globals.css; <"sin assets ni sonido" | plan de assets de A3>.
 
-Fuera de alcance: <sonido, red, localStorage, táctil, mecánicas descartadas, sprites no usados...>
+Fuera de alcance: <sonido, red, localStorage, gestos táctiles propios, mecánicas descartadas, sprites no usados...>
 
 Preguntas abiertas a confirmar: <cada [propuesta] de mayor impacto, licencia de assets, audio...>
 ```

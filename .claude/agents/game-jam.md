@@ -68,7 +68,8 @@ Las decisiones menores (valores de constantes, colores, textos del canvas) no se
 - `GameSnapshot { score, lives, level, state }` sin campos nuevos; `onSnapshot` solo cuando cambia algún campo. Valores propios del juego solo en el canvas.
 - Motor sin globales: clase con `start/pause/resume/endGame/restart/destroy`; `resume()` reinicia `lastTime`; `pause()` vacía la cola de input; `dt` con tope.
 - Hex copiados de `globals.css`; fuente del canvas `monospace`; overlay `GAME OVER` / `ESPACIO PARA REINICIAR` sin puntaje.
-- Teclado: flechas + WASD, P/Esc pausa, Espacio reinicia en game over; `preventDefault` salvo foco en `input`/`textarea`/`contentEditable`. Sin táctil ni sonido salvo que el usuario lo pida.
+- Teclado: flechas + WASD, P/Esc pausa, Espacio reinicia en game over; `preventDefault` salvo foco en `input`/`textarea`/`contentEditable`. Sin sonido salvo que el usuario lo pida.
+- Táctil (SPEC 11): el juego no implementa táctil propio; se juega con `<TouchControls>` común (D-pad = flechas, `A` = `Space`, `B` = acción secundaria o `null`), que despacha teclas sintéticas en `window`. `input.ts` decide por `e.code`. La spec agrega la entrada `"<id>": { b: ... }` en `games/touch-bindings.ts` (`b` ≠ flechas y ≠ `Space`; usar alias WASD/X). Si el juego usa mouse en el canvas: pointer events + tap slop + `touchAction: "none"`, como Bloque Buster.
 - `id` consistente en `lib/games.ts`, `games/registry.ts` y `public.games`; `playable = true`.
 - Guardado de puntuación vía SPEC 07 sin tocar `components/player.tsx`.
 - Renombre en BD: insert + update + delete en una sola migración (la FK no tiene `ON UPDATE CASCADE`).
@@ -109,6 +110,8 @@ Mismo orden, secciones y nivel de detalle que las specs de referencia (o los eje
 
 ### Input (`games/<id>/input.ts`) (tabla acción / teclas / repetición)
 
+### Controles táctiles (`games/touch-bindings.ts`) (entrada del juego + tabla ▲ ▼ ◀ ▶ / A / B → acción)
+
 ### Archivos tras esta spec
 
 ### Rutas tras esta spec
@@ -124,7 +127,7 @@ Mismo orden, secciones y nivel de detalle que las specs de referencia (o los eje
 ## What is **not** in this spec (cierra con "Cada uno, si se hace, va en su propio spec.")
 ```
 
-Los criterios de aceptación incluyen siempre: `npm run build`, `npx tsc --noEmit`, `npx eslint app components lib games`, grep de restos si hay renombre, conteos en Supabase, sin warnings de hidratación, `devicePixelRatio` 2 → canvas 1600×1200, 375px sin scroll horizontal, canvas sin puntaje/nivel/vidas, `.player-hud` sin elementos nuevos, teclas no desplazan la página, pausa sin saltos ni input en cola, game over y reinicio, 1 `POST /api/scores` con sesión, CTA para invitado, marca nueva en `/salon?juego=<id>`, listeners liberados tras SALIR y regresión de los otros juegos jugables. Más los criterios propios de la mecánica del tema.
+Los criterios de aceptación incluyen siempre: `npm run build`, `npx tsc --noEmit`, `npx eslint app components lib games`, grep de restos si hay renombre, conteos en Supabase, sin warnings de hidratación, `devicePixelRatio` 2 → canvas 1600×1200, 375px sin scroll horizontal, canvas sin puntaje/nivel/vidas, `.player-hud` sin elementos nuevos, teclas no desplazan la página, pausa sin saltos ni input en cola, game over y reinicio, 1 `POST /api/scores` con sesión, CTA para invitado, marca nueva en `/salon?juego=<id>`, listeners liberados tras SALIR, controles táctiles en 390×844 (Playwright `hasTouch`: `.touch-controls` visible y dentro del viewport, D-pad/`A`/`B` hacen la acción de la tabla, `B` atenuado si `null`, `A` reinicia en game over) y regresión de los otros juegos jugables. Más los criterios propios de la mecánica del tema.
 
 ## 7. Salida en disco
 
