@@ -1,0 +1,1 @@
+- Frogger optimizado en SPEC 12 (2026-11-25): 45,8 → 56,7 FPS; sprites en `<canvas>` = regresión (~29 FPS), `ImageBitmap` ok. Ver `specs/12-rendimiento-frogger.md` § Mediciones.

@@ -81,6 +81,7 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 - Agente `.claude/agents/game-planner.md`: decide qué juego agregar (diversidad de categorías, factibilidad canvas 2D, reconoce clásicos). Memoria persistente `memory: project` → `.claude/agent-memory/game-planner/` (commitear); historial en `references/games-seggestions-todo.md`.
 - Agente `.claude/agents/game-jam.md`: tema + juego → 2 specs completos (formato SPEC 05/08/09/10 o ejemplos dados) en `specs/game-jam/<game-id>/`. Se detiene y pregunta ante dudas de alto impacto; Supabase solo lectura. Memoria en `.claude/agent-memory/game-jam/`.
 - Agente `.claude/agents/mobile-porter.md`: audita y corrige el reproductor `/juegos/<id>/jugar` en navegador móvil (390×844, Playwright `hasTouch`) según SPEC 11: `TOUCH_BINDINGS`, controles táctiles, HUD compacto. No toca motores ni contrato común; pregunta si el fix lo requiere. No commitea. Memoria en `.claude/agent-memory/mobile-porter/`.
+- Agente `.claude/agents/game-performance.md`: recibe un id de juego; mide FPS/tirones y renders React (procedimiento SPEC 12: build `--profile`, Playwright 390×844 dpr 3, CPU 4×), corrige solo si no cumple metas (≥55 FPS, ≤5% frames >33 ms, umbral React) con caché de fondo/sprites `ImageBitmap` sin cambiar look ni reglas, e informa en `specs/perf/<id>.md`. No commitea. Memoria en `.claude/agent-memory/game-performance/`.
 - Capturas/logs de Playwright en `.playwright-mcp/` y `.playwright-cli/` (gitignored).
 
 ## SKILLS
@@ -89,4 +90,5 @@ Ver `.env.example`: `RESEND_API_KEY`, `CONTACT_TO_EMAIL`, `NEXT_PUBLIC_SUPABASE_
 - Usa /supabase y /supabase-postgres-best-practices antes de cambios de esquema, migraciones o queries.
 - Usa el agente `game-planner` cuando se pidan ideas o qué juego agregar a continuación (antes de /add-game).
 - Para implementar la spec de un juego usa /spec-impl-game (lanza `mobile-porter` al final). Usa el agente `mobile-porter` directamente cuando se pida revisar/portar juegos a móvil.
+- Usa el agente `game-performance` (con el id del juego) cuando se reporten FPS bajos/tirones o se pida optimizar un juego.
 - Usa /add-game para preparar un juego nuevo antes de /spec.
