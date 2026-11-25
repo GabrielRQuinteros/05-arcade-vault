@@ -1,1 +1,1 @@
-- Frogger optimizado en SPEC 12 (2026-11-25): 45,8 → 56,7 FPS; sprites en `<canvas>` = regresión (~29 FPS), `ImageBitmap` ok. Ver `specs/12-rendimiento-frogger.md` § Mediciones.
+- [Mediciones y trucos](measurement-notes.md) — frogger 45,8→56,7 corregido; snake ~79 FPS ya cumplía; ruido headed >60 Hz, CRLF, contextos Playwright
