@@ -1,11 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import {
+  type ComponentType,
+  memo,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { fmt, type Game } from "@/lib/games";
 import { GAME_COMPONENTS } from "@/games/registry";
-import { TOUCH_BINDINGS } from "@/games/touch-bindings";
-import type { GameHandle, GameSnapshot } from "@/games/types";
+import { TOUCH_BINDINGS, type TouchBindings } from "@/games/touch-bindings";
+import type { GameCanvasProps, GameHandle, GameSnapshot } from "@/games/types";
 import { useTouchMode } from "@/lib/touch";
 import type { ServerResponse } from "@/lib/server-response";
 import type { SubmitResult } from "@/lib/scores-schema";
@@ -18,6 +27,97 @@ const INITIAL_SNAPSHOT: GameSnapshot = {
   level: 1,
   state: "playing",
 };
+
+/** Bindings por defecto (juego sin entrada en TOUCH_BINDINGS); constante para no romper el memo. */
+const NO_B_BINDINGS: TouchBindings = { b: null };
+
+/**
+ * Canvas del juego memoizado: los snapshots del motor re-renderizan el HUD,
+ * no el canvas (sus props son estables salvo `paused`).
+ */
+const GameView = memo(function GameView({
+  Component,
+  ...props
+}: GameCanvasProps & { Component: ComponentType<GameCanvasProps> }) {
+  return <Component {...props} />;
+});
+
+/** Controles táctiles memoizados: no dependen de score, vidas ni nivel. */
+const MemoTouchControls = memo(TouchControls);
+
+/** Último snapshot del motor fuera del estado de React: solo se re-renderiza quien se suscribe. */
+type SnapshotStore = {
+  get(): GameSnapshot;
+  set(s: GameSnapshot): void;
+  subscribe(listener: () => void): () => void;
+};
+
+function createSnapshotStore(): SnapshotStore {
+  let snap = INITIAL_SNAPSHOT;
+  const listeners = new Set<() => void>();
+  return {
+    get: () => snap,
+    set: (s) => {
+      snap = s;
+      listeners.forEach((l) => l());
+    },
+    subscribe: (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+  };
+}
+
+const getInitialSnapshot = () => INITIAL_SNAPSHOT;
+
+/**
+ * Valores del HUD (jugador, puntuación, vidas, nivel). Es lo único que se
+ * re-renderiza en cada snapshot; el resto del reproductor solo al cambiar `gameOver`.
+ */
+const HudStats = memo(function HudStats({
+  store,
+  name,
+  simulated,
+  simScore,
+  simLives,
+}: {
+  store: SnapshotStore;
+  name: string;
+  simulated: boolean;
+  simScore: number;
+  simLives: number;
+}) {
+  const snap = useSyncExternalStore(
+    store.subscribe,
+    store.get,
+    getInitialSnapshot,
+  );
+  const score = simulated ? simScore : snap.score;
+  const lives = simulated ? simLives : snap.lives;
+  const level = simulated ? 1 + Math.floor(simScore / 2500) : snap.level;
+  return (
+    <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+      <div className="hud-stat">
+        <div className="l">Jugador</div>
+        <div className="v" style={{ color: "var(--ink)" }}>
+          {name}
+        </div>
+      </div>
+      <div className="hud-stat">
+        <div className="l">Puntuación</div>
+        <div className="v">{fmt(score)}</div>
+      </div>
+      <div className="hud-stat lives">
+        <div className="l">Vidas</div>
+        <div className="v">{"♥ ".repeat(lives).trim() || "—"}</div>
+      </div>
+      <div className="hud-stat level">
+        <div className="l">Nivel</div>
+        <div className="v">{String(level).padStart(2, "0")}</div>
+      </div>
+    </div>
+  );
+});
 
 /** Estado del guardado automático al terminar una partida de un juego registrado. */
 type SaveStatus =
@@ -41,7 +141,12 @@ export function GamePlayer({ game }: { game: Game }) {
   const [typedName, setTypedName] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   // Juego registrado: el motor es la única fuente de verdad de la partida.
-  const [snapshot, setSnapshot] = useState<GameSnapshot>(INITIAL_SNAPSHOT);
+  const [snapshotStore] = useState(createSnapshotStore);
+  const engineOver = useSyncExternalStore(
+    snapshotStore.subscribe,
+    () => snapshotStore.get().state === "gameover",
+    () => false,
+  );
   const gameRef = useRef<GameHandle>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>({ kind: "idle" });
   // Un único envío por partida (StrictMode / re-renders); se rearma al reiniciar.
@@ -50,12 +155,10 @@ export function GamePlayer({ game }: { game: Game }) {
   const runRef = useRef(0);
 
   const name = typedName ?? user?.name ?? "INVITADO";
-  const hudScore = simulated ? score : snapshot.score;
-  const hudLives = simulated ? lives : snapshot.lives;
-  const hudLevel = simulated ? 1 + Math.floor(score / 2500) : snapshot.level;
-  const gameOver = !simulated && snapshot.state === "gameover";
+  const gameOver = !simulated && engineOver;
 
-  const togglePause = () => setPaused((p) => !p);
+  // Estable: va como prop al canvas memoizado.
+  const togglePause = useCallback(() => setPaused((p) => !p), []);
 
   const submitScore = async (finalScore: number) => {
     const run = runRef.current;
@@ -88,8 +191,8 @@ export function GamePlayer({ game }: { game: Game }) {
 
   // El motor emite un snapshot por cada cambio; la transición a "gameover"
   // (perder la última vida o FIN) dispara el envío una sola vez.
-  const onSnapshot = (s: GameSnapshot) => {
-    setSnapshot(s);
+  const handleSnapshot = (s: GameSnapshot) => {
+    snapshotStore.set(s);
     if (s.state === "gameover") {
       if (sentRef.current) return;
       sentRef.current = true;
@@ -101,6 +204,18 @@ export function GamePlayer({ game }: { game: Game }) {
       setSaveStatus({ kind: "idle" });
     }
   };
+
+  // Callback estable para el canvas memoizado que delega en el handler del
+  // último render. Layout effect: se actualiza antes de los efectos pasivos
+  // del canvas, que es donde el motor arranca y emite.
+  const snapshotHandlerRef = useRef(handleSnapshot);
+  useLayoutEffect(() => {
+    snapshotHandlerRef.current = handleSnapshot;
+  });
+  const onSnapshot = useCallback(
+    (s: GameSnapshot) => snapshotHandlerRef.current(s),
+    [],
+  );
 
   const onFin = () => {
     if (simulated) {
@@ -141,26 +256,13 @@ export function GamePlayer({ game }: { game: Game }) {
   return (
     <div className="av-player fade-in">
       <div className="player-hud">
-        <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
-          <div className="hud-stat">
-            <div className="l">Jugador</div>
-            <div className="v" style={{ color: "var(--ink)" }}>
-              {name}
-            </div>
-          </div>
-          <div className="hud-stat">
-            <div className="l">Puntuación</div>
-            <div className="v">{fmt(hudScore)}</div>
-          </div>
-          <div className="hud-stat lives">
-            <div className="l">Vidas</div>
-            <div className="v">{"♥ ".repeat(hudLives).trim() || "—"}</div>
-          </div>
-          <div className="hud-stat level">
-            <div className="l">Nivel</div>
-            <div className="v">{String(hudLevel).padStart(2, "0")}</div>
-          </div>
-        </div>
+        <HudStats
+          store={snapshotStore}
+          name={name}
+          simulated={simulated}
+          simScore={score}
+          simLives={lives}
+        />
         <div className="hud-actions">
           <button
             className="btn yellow"
@@ -185,7 +287,8 @@ export function GamePlayer({ game }: { game: Game }) {
       <div className="crt">
         <div className="crt-screen">
           {GameComponent ? (
-            <GameComponent
+            <GameView
+              Component={GameComponent}
               ref={gameRef}
               paused={paused}
               onSnapshot={onSnapshot}
@@ -230,9 +333,10 @@ export function GamePlayer({ game }: { game: Game }) {
           <span>CARGA · 1MB</span>
         </div>
       </div>
-
       {touch && !simulated && (
-        <TouchControls bindings={TOUCH_BINDINGS[game.id] ?? { b: null }} />
+        <MemoTouchControls
+          bindings={TOUCH_BINDINGS[game.id] ?? NO_B_BINDINGS}
+        />
       )}
 
       {over && (
