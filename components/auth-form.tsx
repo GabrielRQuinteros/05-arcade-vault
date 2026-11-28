@@ -17,6 +17,7 @@ const MSG = {
   oauth: "NO SE PUDO CONECTAR CON EL PROVEEDOR",
   rateLimit: "DEMASIADOS INTENTOS. ESPERA UN MINUTO",
   network: "ERROR DE CONEXIÓN. INTÉNTALO DE NUEVO",
+  passwordCompromised: "CONTRASEÑA FILTRADA EN BRECHAS. ELIGE OTRA.",
 } as const;
 
 type AuthError = { code?: string; status?: number } | null | undefined;
@@ -120,7 +121,13 @@ export function AuthForm() {
       if (error) throw error;
       done();
     } catch (err) {
-      setFormError(messageFor(err as AuthError));
+      const authError = err as AuthError;
+      // Contraseña filtrada (plugin haveIBeenPwned): error del campo, no del formulario.
+      if (authError?.code === "PASSWORD_COMPROMISED") {
+        setFieldErrors({ password: MSG.passwordCompromised });
+      } else {
+        setFormError(messageFor(authError));
+      }
       setBusy(false);
     }
   };

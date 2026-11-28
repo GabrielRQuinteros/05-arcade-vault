@@ -1,5 +1,5 @@
 import { betterAuth } from "better-auth";
-import { jwt, username } from "better-auth/plugins";
+import { haveIBeenPwned, jwt, username } from "better-auth/plugins";
 import { pool } from "@/lib/db";
 import { getAuthEnv } from "./env";
 import {
@@ -61,6 +61,17 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24, // renovación deslizante, máx. 1 vez/día
     cookieCache: { enabled: true, maxAge: 60 * 5, strategy: "jwt" },
   },
+  // SPEC 13: rate limit por IP en la tabla public."rateLimit" (la memoria es por
+  // instancia y en serverless casi no limita). `enabled` queda en el default:
+  // solo en producción. Resto de rutas: default global (100 / 10 s).
+  rateLimit: {
+    storage: "database",
+    customRules: {
+      "/sign-up/email": { window: 3600, max: 3 },
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-in/username": { window: 60, max: 5 },
+    },
+  },
   account: {
     // Sin vinculación: cada método (contraseña, Google, GitHub) es una cuenta aparte.
     accountLinking: { enabled: false },
@@ -72,5 +83,8 @@ export const auth = betterAuth({
       usernameValidator: (u) => /^[a-zA-Z0-9_]+$/.test(u),
     }),
     jwt(),
+    // SPEC 13: rechaza contraseñas filtradas en el signup (k-anonymity, solo 5 chars del SHA-1).
+    // Si la API de HIBP no responde, el signup falla con 500 (fail-closed).
+    haveIBeenPwned(),
   ],
 });
